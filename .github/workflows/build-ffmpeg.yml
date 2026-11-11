@@ -46,13 +46,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # torchcodec-ffmpeg: build only for the platforms TorchCodec publishes
+        # wheels for (macOS arm64, Linux x86_64 and aarch64, Windows x86_64)
         include:
           - os: macos-15
             arch: arm64
             shell: bash
-          - os: macos-15-intel
-            arch: x86_64
-            shell: bash
+          # - os: macos-15-intel
+          #   arch: x86_64
+          #   shell: bash
           - os: ubuntu-24.04-arm
             arch: aarch64
             shell: bash
@@ -64,11 +66,11 @@ jobs:
             shell: 'msys2 {0}'
             msys_prefix: mingw-w64-x86_64
             msys_system: MINGW64
-          - os: windows-11-arm
-            arch: arm64
-            shell: 'msys2 {0}'
-            msys_prefix: mingw-w64-clang-aarch64
-            msys_system: CLANGARM64
+          # - os: windows-11-arm
+          #   arch: arm64
+          #   shell: 'msys2 {0}'
+          #   msys_prefix: mingw-w64-clang-aarch64
+          #   msys_system: CLANGARM64
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -116,6 +118,8 @@ jobs:
           CIBW_BEFORE_BUILD: python scripts/build-ffmpeg.py /tmp/vendor
           CIBW_BEFORE_BUILD_WINDOWS: python scripts\build-ffmpeg.py C:\cibw\vendor
           CIBW_BUILD: cp312-*
+          # torchcodec-ffmpeg: TorchCodec publishes no musllinux wheels
+          CIBW_SKIP: "*-musllinux_*"
           # cibuildwheel copies the project to /project in each container
           CIBW_ENVIRONMENT_LINUX: PATH=/project/tools/bin:$PATH
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: LD_LIBRARY_PATH=/tmp/vendor/lib:$LD_LIBRARY_PATH auditwheel repair --exclude libmvec.so.1 --exclude libmvec-2.so --exclude libmvec.so --exclude libmvec -w {dest_dir} {wheel}
@@ -132,6 +136,8 @@ jobs:
           path: output/
 
   cross-build:
+    # torchcodec-ffmpeg: TorchCodec publishes no wheels for these arches
+    if: false
     needs: fan
     # armv7l is cross-compiled from an aarch64 host with the arm-linux-gnueabihf
     # toolchain; the other arches cross-compile from x86_64.
@@ -178,7 +184,9 @@ jobs:
 
   upload-release:
     if: github.event_name == 'release'
-    needs: [build, cross-build]
+    # torchcodec-ffmpeg: cross-build is disabled
+    # needs: [build, cross-build]
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
