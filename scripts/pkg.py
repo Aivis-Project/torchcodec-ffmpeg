@@ -261,8 +261,11 @@ nasm_package = Package(
 
 ffmpeg_package = Package(
     name="ffmpeg",
-    source_url="https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
-    sha256="8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+    # torchcodec-ffmpeg: TorchCodec 0.15 and older load FFmpeg up to 8
+    # source_url="https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+    # sha256="8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+    source_url="https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz",
+    sha256="7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3",
 )
 
 all_packages: list[Package] = [ffmpeg_package]
