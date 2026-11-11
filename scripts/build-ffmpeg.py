@@ -11,6 +11,7 @@ import tarfile
 
 from cibuildpkg import Builder, Package, fetch, log_group, run
 from pkg import *
+import torchcodec_components
 
 plat = platform.system()
 
@@ -273,6 +274,13 @@ def main():
         ]
     )
 
+    # torchcodec-ffmpeg: leave out what TorchCodec cannot reach
+    ffmpeg_package.build_arguments = torchcodec_components.configure_arguments(
+        ffmpeg_package.build_arguments, use_cuda=use_cuda
+    )
+    if use_cuda and plat == "Linux":
+        torchcodec_components.install_clang()
+
     packages = []
     if "nasm" not in available_tools and is_x86:
         packages.append(nasm_package)
@@ -294,6 +302,8 @@ def main():
         packages += codec_group
     packages += ass_group
     packages += [ffmpeg_package]
+    # torchcodec-ffmpeg: skip the packages TorchCodec does not use
+    packages = [p for p in packages if p.name not in torchcodec_components.SKIPPED_PACKAGES]
 
     # Where libass finds the system's fonts. Linux has no provider without
     # fontconfig. It has x86 (nasm) and aarch64 assembly; elsewhere it's plain C.

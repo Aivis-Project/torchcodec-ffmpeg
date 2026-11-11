@@ -41,7 +41,10 @@ def main():
         f"Currently FFmpeg {get_version(ffmpeg_package)} is built with the following packages enabled for all platforms:\n"
     )
 
+    # torchcodec-ffmpeg: list only the packages that are built
     for package in codec_group + ass_group:
+        if package.name in torchcodec_components.SKIPPED_PACKAGES:
+            continue
         print(f"- {package.name} {get_version(package)}")
 
     print("\nThe following additional packages are also enabled on Linux:\n")

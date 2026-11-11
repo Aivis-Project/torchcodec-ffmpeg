@@ -98,6 +98,7 @@ jobs:
       - name: Build nasm
         if: runner.os == 'Linux' && matrix.arch == 'x86_64'
         run: python scripts/build-nasm.py tools/bin
+      # torchcodec-ffmpeg: clang compiles the CUDA kernels of scale_cuda (--enable-cuda-llvm)
       - uses: msys2/setup-msys2@v2
         if: runner.os == 'Windows'
         with:
@@ -106,6 +107,7 @@ jobs:
             openssl-devel
             ${{ matrix.msys_prefix }}-pkgconf
             ${{ matrix.msys_system == 'CLANGARM64' && format('{0}-clang', matrix.msys_prefix) || format('{0}-gcc {0}-nasm', matrix.msys_prefix) }}
+            ${{ matrix.msys_system == 'MINGW64' && format('{0}-clang', matrix.msys_prefix) || '' }}
           msystem: ${{ matrix.msys_system }}
           path-type: inherit
       - name: Build FFmpeg
