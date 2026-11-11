@@ -222,6 +222,38 @@ jobs:
       - name: Test
         run: uv run --no-project --python .venv-test pytest -v
 
+  # torchcodec-ffmpeg: test that an app frozen with PyInstaller uses the
+  # bundled FFmpeg, with the hooks shipped in the wheel
+  test-pyinstaller:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04, ubuntu-24.04-arm, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Get the wheel
+        uses: actions/download-artifact@v8
+        with:
+          name: output-${{ matrix.os }}
+          path: output
+      - name: Install the wheel with TorchCodec and PyInstaller
+        run: |
+          # On Linux, torch from PyPI is the CUDA build; the tests need only the CPU build
+          index=()
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            index=(--index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match)
+          fi
+          uv venv --python 3.13 .venv-test
+          uv pip install --python .venv-test "${index[@]}" torch torchcodec pyinstaller pytest output/*.whl
+      - name: Test
+        run: uv run --no-project --python .venv-test pytest -v tests/test_pyinstaller.py
+
   cross-build:
     # torchcodec-ffmpeg: TorchCodec publishes no wheels for these arches
     if: false
