@@ -30,6 +30,7 @@ classifiers = [
 [dependency-groups]
 dev = [
     "pyright>=1.1.407",
+    "pytest>=8.4.2",
     "ruff>=0.14.6,<1.0.0",
     "setuptools>=70.1",
     "taskipy>=1.14.1",
@@ -40,6 +41,7 @@ dev = [
 lint = "ruff check --fix . ; pyright"
 format = "ruff format ."
 typecheck = "pyright"
+test = "pytest"
 
 [project.urls]
 Repository = "https://github.com/Aivis-Project/torchcodec-ffmpeg"
@@ -58,6 +60,9 @@ packages = ["torchcodec_ffmpeg"]
 package = false
 default-groups = ["dev"]
 exclude-newer = "1 week"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py310"

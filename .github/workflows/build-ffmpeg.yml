@@ -144,6 +144,84 @@ jobs:
           name: output-${{ matrix.os }}
           path: output/
 
+  # torchcodec-ffmpeg: test the wheel with the latest TorchCodec and torch on
+  # every platform and Python version TorchCodec publishes wheels for
+  test:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04, ubuntu-24.04-arm, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        exclude:
+          # TorchCodec publishes no free-threaded wheels for Windows
+          - os: windows-latest
+            python: "3.14t"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Get the wheel
+        uses: actions/download-artifact@v8
+        with:
+          name: output-${{ matrix.os }}
+          path: output
+      - name: Install the wheel with TorchCodec
+        run: |
+          # On Linux, torch from PyPI is the CUDA build; the tests need only the CPU build
+          index=()
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            index=(--index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match)
+          fi
+          uv venv --python ${{ matrix.python }} .venv-test
+          uv pip install --python .venv-test "${index[@]}" torch torchcodec pytest output/*.whl
+      - name: Test
+        run: uv run --no-project --python .venv-test pytest -v
+
+  # torchcodec-ffmpeg: test the wheel with each TorchCodec version that loads
+  # FFmpeg 8, paired with the torch versions it supports
+  test-torchcodec-versions:
+    needs: build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { torchcodec: "0.8.1", torch: "2.9.1" }
+          - { torchcodec: "0.9.1", torch: "2.9.1" }
+          - { torchcodec: "0.10.0", torch: "2.10.0" }
+          - { torchcodec: "0.11.0", torch: "2.11.0" }
+          # TorchCodec 0.12 and later work with torch 2.11 and later
+          - { torchcodec: "0.12.0", torch: "2.11.0" }
+          - { torchcodec: "0.12.0", torch: "2.15.0" }
+          - { torchcodec: "0.13.0", torch: "2.11.0" }
+          - { torchcodec: "0.13.0", torch: "2.15.0" }
+          - { torchcodec: "0.14.0", torch: "2.11.0" }
+          - { torchcodec: "0.14.0", torch: "2.15.0" }
+          - { torchcodec: "0.15.0", torch: "2.11.0" }
+          - { torchcodec: "0.15.0", torch: "2.15.0" }
+          - { torchcodec: "0.16.0", torch: "2.11.0" }
+          - { torchcodec: "0.16.0", torch: "2.15.0" }
+          - { torchcodec: "0.17.0", torch: "2.11.0" }
+          - { torchcodec: "0.17.0", torch: "2.15.0" }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Get the wheel
+        uses: actions/download-artifact@v8
+        with:
+          name: output-ubuntu-24.04
+          path: output
+      - name: Install the wheel with TorchCodec
+        run: |
+          uv venv --python 3.12 .venv-test
+          uv pip install --python .venv-test --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match "torch==${{ matrix.torch }}" "torchcodec==${{ matrix.torchcodec }}" pytest output/*.whl
+      - name: Test
+        run: uv run --no-project --python .venv-test pytest -v
+
   cross-build:
     # torchcodec-ffmpeg: TorchCodec publishes no wheels for these arches
     if: false
@@ -193,9 +271,7 @@ jobs:
 
   upload-release:
     if: github.event_name == 'release'
-    # torchcodec-ffmpeg: cross-build is disabled
-    # needs: [build, cross-build]
-    needs: [build]
+    needs: [build, cross-build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -209,6 +285,4 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v3
         with:
-          files: |
-            artifacts/*.tar.gz
-            artifacts/*.whl
+          files: artifacts/*.tar.gz
