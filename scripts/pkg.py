@@ -1,5 +1,6 @@
-from dataclasses import dataclass, field
 import platform
+from dataclasses import dataclass, field
+
 
 @dataclass(slots=True)
 class Package:
@@ -271,7 +272,7 @@ ffmpeg_package = Package(
 all_packages: list[Package] = [ffmpeg_package]
 all_packages.extend(codec_group)
 all_packages.extend(ass_group)
-all_packages.extend(gnutls_group) 
+all_packages.extend(gnutls_group)
 all_packages.extend(
     [nasm_package, alsa_package, nvheaders_package, amfheaders_package, libvpl_package]
 )

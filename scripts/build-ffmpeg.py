@@ -1,7 +1,6 @@
 import argparse
 import glob
 import gzip
-import hashlib
 import os
 import platform
 import shutil
@@ -9,9 +8,9 @@ import subprocess
 import sys
 import tarfile
 
-from cibuildpkg import Builder, Package, fetch, log_group, run
-from pkg import *
 import torchcodec_components
+from cibuildpkg import log_group, run
+from pkg import *
 
 plat = platform.system()
 

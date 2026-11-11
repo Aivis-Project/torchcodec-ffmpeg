@@ -4,15 +4,15 @@ import contextlib
 import os
 import platform
 import shutil
-import struct
 import subprocess
 import tarfile
 import tempfile
 import time
 from collections.abc import Iterator
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 
 from pkg import *
+
 
 def fetch(url: str, path: str) -> None:
     run(["curl", "-L", "-o", path, url])
@@ -67,7 +67,7 @@ def run(cmd: list[str], env=None) -> None:
         config_log = os.path.join(os.getcwd(), "ffbuild", "config.log")
         if os.path.exists(config_log):
             print(f"\n=== Tail of {config_log} ===")
-            with open(config_log, "r") as f:
+            with open(config_log) as f:
                 lines = f.readlines()
                 print("".join(lines[-100:]))
         raise e

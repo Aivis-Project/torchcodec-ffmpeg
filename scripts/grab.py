@@ -1,10 +1,11 @@
 import concurrent.futures
+import hashlib
 import os
 import subprocess
-import hashlib
 
-from pkg import all_packages
 from cibuildpkg import fetch
+from pkg import all_packages
+
 
 def calculate_sha256(filename: str) -> str:
     sha256_hash = hashlib.sha256()
