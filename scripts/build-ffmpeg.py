@@ -155,7 +155,9 @@ def main():
     if os.path.exists(output_tarball):
         return
 
-    builder = Builder(dest_dir=dest_dir)
+    # torchcodec-ffmpeg: the Builder of torchcodec_components builds x265 with 8-bit support only
+    # builder = Builder(dest_dir=dest_dir)
+    builder = torchcodec_components.Builder(dest_dir=dest_dir)
     builder.create_directories()
 
     # install packages

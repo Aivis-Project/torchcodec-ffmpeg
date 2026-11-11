@@ -6,12 +6,14 @@ upstream build is kept as it is, and only what TorchCodec cannot reach is left
 out. The package definitions in pkg.py and the configure arguments in
 build-ffmpeg.py are not edited, so that upstream updates merge cleanly.
 build-ffmpeg.py skips the packages and appends the configure arguments listed
-here.
+here, and builds x265 with the Builder below.
 """
 
+import platform
 import shutil
 
-from cibuildpkg import log_group, run
+import cibuildpkg
+from cibuildpkg import Package, log_group, run
 
 # Packages from pkg.py that TorchCodec cannot use: libass and its font libraries
 # (the subtitles filter), libvmaf (the libvmaf filter) and ALSA (capture and
@@ -78,3 +80,24 @@ def install_clang() -> None:
         return
     with log_group("install clang"):
         run(["dnf", "-y", "install", "clang"])
+
+
+class Builder(cibuildpkg.Builder):
+    """The upstream Builder, building x265 with 8-bit support only.
+
+    Upstream builds x265 three times and links the 8-bit library with the 10-bit
+    and 12-bit ones, which more than triples its size. TorchCodec encodes 8-bit
+    frames (its video encoders take uint8 tensors), and 10-bit HEVC can still be
+    encoded with the hardware encoders (NVENC, AMF, QSV and VideoToolbox).
+    """
+
+    def _build_x265(self, package: Package) -> None:
+        # Upstream builds x265 three times: the 12-bit and 10-bit static
+        # libraries, and then the 8-bit shared library, which links them in
+        # with -DEXTRA_LIB, -DLINKED_10BIT and -DLINKED_12BIT. Only the 8-bit
+        # shared library is built here, without them. It gets the flag upstream
+        # gives it on Linux aarch64; upstream's -DCPU_HAS_NEON for 32-bit ARM is
+        # not needed, as no 32-bit ARM wheel is built.
+        if platform.system() == "Linux" and platform.machine() == "aarch64":
+            package.build_arguments = ["-DENABLE_SVE2=OFF"]
+        self._build_with_cmake(package=package, for_builder=False)
