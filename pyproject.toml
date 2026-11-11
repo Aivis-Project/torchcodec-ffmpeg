@@ -1,3 +1,64 @@
+[project]
+name = "torchcodec-ffmpeg"
+# The FFmpeg version built by scripts/pkg.py
+version = "8.1.3"
+description = "FFmpeg shared libraries for TorchCodec, installable with pip and uv"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "tsukumi", email = "tsukumijima@users.noreply.github.com" },
+]
+keywords = ["ffmpeg", "torchcodec", "pytorch", "video", "audio"]
+classifiers = [
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Free Threading :: 3 - Stable",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Video",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+    "ruff>=0.14.6,<1.0.0",
+    "setuptools>=70.1",
+    "taskipy>=1.14.1",
+]
+
+[tool.taskipy.tasks]
+# Run Pyright even if Ruff fails, to show the diagnostics of both
+lint = "ruff check --fix . ; pyright"
+format = "ruff format ."
+typecheck = "pyright"
+
+[project.urls]
+Repository = "https://github.com/Aivis-Project/torchcodec-ffmpeg"
+
+[build-system]
+# setuptools.command.bdist_wheel is available from setuptools 70.1
+requires = ["setuptools>=70.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["torchcodec_ffmpeg"]
+
+[tool.uv]
+# The package needs the FFmpeg built by scripts/build-ffmpeg.py, so it is
+# built as a wheel with cibuildwheel and not installed into the environment
+package = false
+default-groups = ["dev"]
+exclude-newer = "1 week"
+
 [tool.ruff]
 target-version = "py310"
 
@@ -14,3 +75,26 @@ select = [
     "C404",  # flake8-comprehensions: unnecessary-list-comprehension-dict
     "C405",  # flake8-comprehensions: unnecessary-literal-set
 ]
+
+[tool.pyright]
+pythonVersion = "3.10"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "strict"
+pythonPlatform = "All"
+# Paths to check (the build scripts inherited from pyav-ffmpeg are left out)
+include = [
+    "torchcodec_ffmpeg/",
+    "scripts/torchcodec_components.py",
+    "setup.py",
+]
+exclude = [
+    "**/__pycache__",
+    "**/.venv",
+]
+# Suppress some of the Pyright/Pylance type check errors
+reportConstantRedefinition = "none"
+reportMissingTypeStubs = "none"
+reportUnknownArgumentType = "none"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"

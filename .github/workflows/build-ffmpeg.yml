@@ -117,18 +117,27 @@ jobs:
           CIBW_ARCHS: ${{ matrix.msys_system == 'CLANGARM64' && 'ARM64' || (matrix.msys_prefix && 'AMD64' || matrix.arch) }}
           CIBW_BEFORE_BUILD: python scripts/build-ffmpeg.py /tmp/vendor
           CIBW_BEFORE_BUILD_WINDOWS: python scripts\build-ffmpeg.py C:\cibw\vendor
-          CIBW_BUILD: cp312-*
+          # torchcodec-ffmpeg: the wheel is built once per platform and tested
+          # with every Python version TorchCodec publishes wheels for
+          # CIBW_BUILD: cp312-*
+          CIBW_BUILD: cp310-* cp311-* cp312-* cp313-* cp314-* cp314t-*
           # torchcodec-ffmpeg: TorchCodec publishes no musllinux wheels
           CIBW_SKIP: "*-musllinux_*"
           # cibuildwheel copies the project to /project in each container
           CIBW_ENVIRONMENT_LINUX: PATH=/project/tools/bin:$PATH
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: LD_LIBRARY_PATH=/tmp/vendor/lib:$LD_LIBRARY_PATH auditwheel repair --exclude libmvec.so.1 --exclude libmvec-2.so --exclude libmvec.so --exclude libmvec -w {dest_dir} {wheel}
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path C:\cibw\vendor\bin -w {dest_dir} {wheel}
-          CIBW_TEST_COMMAND: python -c "import dummy"
+          # torchcodec-ffmpeg: the wheel is not repaired. auditwheel, delocate and
+          # delvewheel would rename the bundled libraries, which TorchCodec then
+          # could not find. setup.py sets their rpath instead.
+          # CIBW_REPAIR_WHEEL_COMMAND_LINUX: LD_LIBRARY_PATH=/tmp/vendor/lib:$LD_LIBRARY_PATH auditwheel repair --exclude libmvec.so.1 --exclude libmvec-2.so --exclude libmvec.so --exclude libmvec -w {dest_dir} {wheel}
+          # CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path C:\cibw\vendor\bin -w {dest_dir} {wheel}
+          CIBW_REPAIR_WHEEL_COMMAND: ""
+          # CIBW_TEST_COMMAND: python -c "import dummy"
+          CIBW_TEST_COMMAND: python -c "import torchcodec_ffmpeg; torchcodec_ffmpeg.install()"
         run: |
           pip install cibuildwheel delvewheel
           cibuildwheel --output-dir output
-          rm -f output/*.whl
+          # torchcodec-ffmpeg: the wheel is the product
+          # rm -f output/*.whl
       - name: Upload FFmpeg
         uses: actions/upload-artifact@v7
         with:
@@ -200,4 +209,6 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v3
         with:
-          files: artifacts/*.tar.gz
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.whl
