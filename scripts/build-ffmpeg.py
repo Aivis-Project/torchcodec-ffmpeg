@@ -303,6 +303,8 @@ def main():
         packages += codec_group
     packages += ass_group
     packages += [ffmpeg_package]
+    # torchcodec-ffmpeg: build the other libraries TorchCodec links against
+    packages += torchcodec_components.EXTRA_PACKAGES
     # torchcodec-ffmpeg: skip the packages TorchCodec does not use
     packages = [p for p in packages if p.name not in torchcodec_components.SKIPPED_PACKAGES]
 

@@ -3,6 +3,7 @@ import hashlib
 import os
 import subprocess
 
+import torchcodec_components
 from cibuildpkg import fetch
 from pkg import all_packages
 
@@ -56,7 +57,9 @@ def download_tars(packages: list[Package]) -> None:
 
 def main():
     os.makedirs(os.path.abspath("source"), exist_ok=True)
-    download_tars(all_packages)
+    # torchcodec-ffmpeg: also download the packages of torchcodec_components
+    # download_tars(all_packages)
+    download_tars(all_packages + torchcodec_components.EXTRA_PACKAGES)
 
 if __name__ == "__main__":
     main()

@@ -84,6 +84,15 @@ def test_decode_video(path: Path) -> None:
     assert frame.shape[0] == 3
 
 
+def test_decode_heic() -> None:
+    # decode_heic was added in TorchCodec 0.17
+    decoders = pytest.importorskip("torchcodec.decoders")
+    if not hasattr(decoders, "decode_heic"):
+        pytest.skip("decode_heic is not available in this TorchCodec version")
+    image = decoders.decode_heic(str(ASSETS_DIR / "heic.heic"))
+    assert image.shape == (3, 96, 128)
+
+
 @pytest.mark.parametrize(
     "name", ["out.mp4", "out.mkv", "out.webm", "out.webp", "out.gif", "out.avi"]
 )

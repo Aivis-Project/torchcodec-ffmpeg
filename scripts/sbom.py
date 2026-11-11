@@ -42,7 +42,7 @@ def main():
     )
 
     # torchcodec-ffmpeg: list only the packages that are built
-    for package in codec_group + ass_group:
+    for package in codec_group + ass_group + torchcodec_components.EXTRA_PACKAGES:
         if package.name in torchcodec_components.SKIPPED_PACKAGES:
             continue
         print(f"- {package.name} {get_version(package)}")

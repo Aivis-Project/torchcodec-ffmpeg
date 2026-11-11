@@ -26,8 +26,8 @@ else:
     VENDOR_DIR = Path("/tmp/vendor")
 
 
-# The FFmpeg libraries TorchCodec links against
-FFMPEG_LIBRARIES = (
+# The libraries TorchCodec links against: FFmpeg's and libheif
+LIBRARIES = (
     "avcodec",
     "avdevice",
     "avfilter",
@@ -35,6 +35,7 @@ FFMPEG_LIBRARIES = (
     "avutil",
     "swresample",
     "swscale",
+    "heif",
 )
 
 
@@ -45,13 +46,14 @@ def patchelf(*args: str) -> str:
 
 
 def copy_linux_libraries(lib_dir: Path) -> None:
-    # Copy FFmpeg's libraries and the vendor libraries they depend on, each
-    # under its SONAME, which is the name the dynamic loader looks for. The
-    # vendor directory also holds libraries nothing links against.
+    # Copy the libraries TorchCodec links against and the vendor libraries they
+    # depend on, each under its SONAME, which is the name the dynamic loader
+    # looks for. The vendor directory also holds libraries nothing links
+    # against.
     vendor_libraries = {
         path.name: path for path in (VENDOR_DIR / "lib").glob("*.so*") if path.is_file()
     }
-    pending = [f"lib{name}.so" for name in FFMPEG_LIBRARIES]
+    pending = [f"lib{name}.so" for name in LIBRARIES]
     copied: set[str] = set()
     while pending:
         name = pending.pop()
@@ -79,16 +81,17 @@ def otool(*args: str) -> list[str]:
 
 
 def copy_macos_libraries(lib_dir: Path) -> None:
-    # Copy FFmpeg's libraries and the vendor libraries they depend on, each
-    # under the file name of its install name (libavcodec.62.dylib), which is
-    # the name TorchCodec loads as @rpath/libavcodec.62.dylib. The vendor
-    # directory also holds libraries nothing links against.
+    # Copy the libraries TorchCodec links against and the vendor libraries they
+    # depend on, each under the file name of its install name
+    # (libavcodec.62.dylib), which is the name TorchCodec loads as
+    # @rpath/libavcodec.62.dylib. The vendor directory also holds libraries
+    # nothing links against.
     vendor_libraries = {
         path.name: path
         for path in (VENDOR_DIR / "lib").glob("*.dylib")
         if path.is_file()
     }
-    pending = [f"lib{name}.dylib" for name in FFMPEG_LIBRARIES]
+    pending = [f"lib{name}.dylib" for name in LIBRARIES]
     copied: set[str] = set()
     while pending:
         name = pending.pop()
@@ -118,7 +121,10 @@ def copy_macos_libraries(lib_dir: Path) -> None:
 
 def copy_windows_libraries(lib_dir: Path) -> None:
     for path in sorted((VENDOR_DIR / "bin").glob("*.dll")):
-        shutil.copy2(path, lib_dir / path.name)
+        # TorchCodec loads libheif as heif.dll, the name of its MSVC build,
+        # while the MinGW build names it libheif.dll
+        name = "heif.dll" if path.name == "libheif.dll" else path.name
+        shutil.copy2(path, lib_dir / name)
 
 
 class BuildPy(build_py):

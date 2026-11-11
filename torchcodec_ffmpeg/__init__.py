@@ -22,12 +22,13 @@ from types import ModuleType
 
 __all__ = ["install"]
 
-# The bundled FFmpeg and its dependencies, with the file names they were built
-# with
+# The bundled FFmpeg, libheif and their dependencies, with the file names they
+# were built with
 LIBRARY_DIR = Path(__file__).parent / "lib"
 
-# The FFmpeg libraries TorchCodec links against, dependencies first
-_FFMPEG_LIBRARIES = (
+# The libraries TorchCodec links against, dependencies first: FFmpeg's, and
+# libheif for TorchCodec's HEIC decoder, which decodes HEVC with libavcodec
+_LIBRARIES = (
     "avutil",
     "swresample",
     "swscale",
@@ -35,6 +36,7 @@ _FFMPEG_LIBRARIES = (
     "avformat",
     "avfilter",
     "avdevice",
+    "heif",
 )
 
 # The major version of the bundled FFmpeg, which is the version of this package
@@ -46,7 +48,8 @@ _loaded: list[object] = []
 
 def _library_path(name: str) -> Path:
     if sys.platform == "win32":
-        pattern = f"{name}-*.dll"
+        # avcodec-62.dll and so on, and heif.dll without a version
+        pattern = f"{name}*.dll"
     elif sys.platform == "darwin":
         pattern = f"lib{name}.*.dylib"
     else:
@@ -129,13 +132,13 @@ class _FinderPreferringBundledFFmpeg(importlib.abc.MetaPathFinder):
 
 
 def install() -> None:
-    """Make TorchCodec use the bundled FFmpeg.
+    """Make TorchCodec use the bundled FFmpeg and libheif.
 
-    TorchCodec's native library depends on FFmpeg's libraries by name
-    (libavcodec.so.62 and so on) and leaves it to the operating system to find
-    them. This loads the bundled libraries into the process first, so that the
-    operating system resolves those names to them, and makes TorchCodec try
-    its libraries for the bundled FFmpeg first.
+    TorchCodec's native libraries depend on FFmpeg's libraries and libheif by
+    name (libavcodec.so.62, libheif.so.1 and so on) and leave it to the
+    operating system to find them. This loads the bundled libraries into the
+    process first, so that the operating system resolves those names to them,
+    and makes TorchCodec try its libraries for the bundled FFmpeg first.
 
     Call it before importing TorchCodec. Calling it again does nothing.
     """
@@ -154,7 +157,7 @@ def install() -> None:
     # RTLD_GLOBAL makes the libraries' symbols available to TorchCodec, which
     # is loaded later. On Linux and macOS the libraries find their own
     # dependencies through an rpath relative to their directory.
-    for name in _FFMPEG_LIBRARIES:
+    for name in _LIBRARIES:
         loaded.append(ctypes.CDLL(str(_library_path(name)), mode=ctypes.RTLD_GLOBAL))
     sys.meta_path.insert(0, _FinderPreferringBundledFFmpeg())
     _loaded.extend(loaded)

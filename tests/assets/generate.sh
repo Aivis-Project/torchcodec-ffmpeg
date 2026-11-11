@@ -2,7 +2,8 @@
 # Generate the test assets with the ffmpeg command line tool.
 # The assets are synthetic (a sine tone and FFmpeg's test pattern) and short,
 # so that they can be committed. Generating them needs an ffmpeg built with
-# libopencore-amrnb, libtheora and libvorbis.
+# libopencore-amrnb, libtheora and libvorbis, and the HEIC image needs
+# ImageMagick with libheif.
 set -eu
 cd "$(dirname "$0")"
 
@@ -47,3 +48,8 @@ $ff $video -c:v mjpeg mjpeg.mov
 $ff $video -c:v gif gif.gif
 $ff $video -c:v apng -f apng apng.apng
 $ff $video -c:v rawvideo -pix_fmt yuv420p rawvideo.y4m
+
+# Image (TorchCodec 0.17 and later decode HEIC with libheif)
+$ff -f lavfi -i testsrc=size=128x96 -frames:v 1 heic.png
+convert heic.png -quality 50 heic.heic
+rm heic.png
